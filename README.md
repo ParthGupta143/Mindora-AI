@@ -1,4 +1,4 @@
-# AIaaS Fraud Detection Platform
+# AIaaS Fraud Detection Platform - Mindora-AI
 
 A multi-tenant AI-as-a-Service platform that exposes machine-learning
 capabilities through secure APIs, with fraud detection as the first
