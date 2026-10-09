@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import MindoraLanding from "@/components/MindoraLanding";
 
 export default function Home() {
-  redirect("/login");
+  return <MindoraLanding />;
 }

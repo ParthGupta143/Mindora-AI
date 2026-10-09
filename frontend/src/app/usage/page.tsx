@@ -1,52 +1,3 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { ProtectedRoute } from "@/components/ProtectedRoute";
-// import { useAuth } from "@/lib/auth-context";
-// import { api, ApiError } from "@/lib/api";
-// import { UsageStats } from "@/lib/types";
-
-// function StatCard({ label, value }: { label: string; value: string }) {
-//   return (
-//     <div className="border rounded-lg p-4 bg-white">
-//       <p className="text-xs text-label mb-1">{label}</p>
-//       <p className="text-2xl font-semibold">{value}</p>
-//     </div>
-//   );
-// }
-
-// export default function UsagePage() {
-//   const { token } = useAuth();
-//   const [stats, setStats] = useState<UsageStats | null>(null);
-//   const [error, setError] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     api
-//       .get<UsageStats>("/usage", token)
-//       .then(setStats)
-//       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load usage"));
-//   }, [token]);
-
-//   return (
-//     <ProtectedRoute>
-//       <h1 className="text-2xl font-semibold mb-6">Usage</h1>
-
-//       {error && <p className="text-red-600">{error}</p>}
-//       {!error && stats === null && <p className="text-gray-500">Loading...</p>}
-
-//       {stats && (
-//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-//           <StatCard label="Total Requests" value={stats.total_requests.toLocaleString()} />
-//           <StatCard label="Error Rate" value={`${(stats.error_rate * 100).toFixed(1)}%`} />
-//           <StatCard label="Avg Latency" value={`${stats.avg_latency_ms.toFixed(0)} ms`} />
-//           <StatCard label="Estimated Cost" value={`$${stats.estimated_cost.toFixed(4)}`} />
-//         </div>
-//       )}
-//     </ProtectedRoute>
-//   );
-// }
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -67,23 +18,21 @@ function StatCard({
   icon: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider font-medium text-muted">
+    <div className="rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.16em] font-semibold text-[#899481]">
             {label}
           </p>
 
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-value">
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-[#243328]">
             {value}
           </p>
 
-          <p className="mt-2 text-xs text-label">
-            {description}
-          </p>
+          <p className="mt-2 text-xs text-[#778174]">{description}</p>
         </div>
 
-        <div className="h-9 w-9 rounded-md bg-accent/10 border border-accent/10 flex items-center justify-center text-accent text-sm">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#e1ebda] bg-[#edf5e8] text-sm font-medium text-[#356344]">
           {icon}
         </div>
       </div>
@@ -103,84 +52,64 @@ export default function UsagePage() {
       .then(setStats)
       .catch((err) =>
         setError(
-          err instanceof ApiError
-            ? err.message
-            : "Failed to load usage"
+          err instanceof ApiError ? err.message : "Failed to load usage"
         )
       );
   }, [token]);
 
   return (
     <ProtectedRoute>
-      <div className="max-w-[1400px] mx-auto">
-
-        {/* ================================================= */}
+      <div className="mx-auto max-w-[1400px]">
         {/* Header */}
-        {/* ================================================= */}
-
         <section className="mb-8">
-          <p className="text-xs uppercase tracking-[0.18em] text-accent font-medium mb-3">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#63815d]">
             AIaaS / Usage
           </p>
 
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-value">
+              <h1 className="text-3xl font-semibold tracking-tight text-[#243328]">
                 Usage &amp; Analytics
               </h1>
-
-              <p className="mt-2 text-sm text-label">
+              <p className="mt-2 text-sm text-[#778174]">
                 Monitor API consumption and estimated costs.
               </p>
             </div>
 
-            <div className="text-xs text-muted">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#e5ebdf] bg-white px-4 py-2 text-xs font-medium text-[#64715f] shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-[#78a66a]" />
               Current usage
             </div>
           </div>
         </section>
 
-        {/* ================================================= */}
         {/* Error */}
-        {/* ================================================= */}
-
         {error && (
-          <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3">
-            <p className="text-xs text-red-400">
-              {error}
-            </p>
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* ================================================= */}
         {/* Loading */}
-        {/* ================================================= */}
-
         {!error && stats === null && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="rounded-lg border border-border bg-card p-5 animate-pulse"
+                className="animate-pulse rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm"
               >
-                <div className="h-3 w-24 rounded bg-surface" />
-                <div className="h-9 w-28 rounded bg-surface mt-4" />
-                <div className="h-3 w-32 rounded bg-surface mt-3" />
+                <div className="h-3 w-24 rounded bg-[#edf1e9]" />
+                <div className="mt-4 h-9 w-28 rounded bg-[#edf1e9]" />
+                <div className="mt-3 h-3 w-32 rounded bg-[#edf1e9]" />
               </div>
             ))}
-
           </div>
         )}
 
-        {/* ================================================= */}
         {/* Stats */}
-        {/* ================================================= */}
-
         {stats && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="API Requests"
                 value={stats.total_requests.toLocaleString()}
@@ -190,10 +119,7 @@ export default function UsagePage() {
 
               <StatCard
                 label="Success Rate"
-                value={`${(
-                  (1 - stats.error_rate) *
-                  100
-                ).toFixed(1)}%`}
+                value={`${((1 - stats.error_rate) * 100).toFixed(1)}%`}
                 description={`${stats.error_count.toLocaleString()} errors`}
                 icon="✓"
               />
@@ -211,125 +137,90 @@ export default function UsagePage() {
                 description="Current usage estimate"
                 icon="$"
               />
-
             </div>
 
-            {/* ================================================= */}
             {/* Usage overview */}
-            {/* ================================================= */}
-
-            <section className="mt-6 rounded-lg border border-border bg-card">
-
-              <div className="px-5 py-4 border-b border-border">
-                <div>
-                  <h2 className="text-sm font-medium text-value">
-                    Usage overview
-                  </h2>
-
-                  <p className="text-xs text-muted mt-0.5">
-                    Current API consumption across your organization.
-                  </p>
-                </div>
+            <section className="mt-6 overflow-hidden rounded-2xl border border-[#e5ebdf] bg-white shadow-sm">
+              <div className="border-b border-[#edf0e9] px-5 py-4 sm:px-6">
+                <h2 className="text-sm font-semibold text-[#2d3b30]">
+                  Usage overview
+                </h2>
+                <p className="mt-1 text-xs text-[#899481]">
+                  Current API consumption across your organization.
+                </p>
               </div>
 
-              <div className="p-5">
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
+              <div className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   {/* Requests */}
-
-                  <div className="rounded-md border border-border bg-surface p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-muted">
+                  <div className="rounded-xl border border-[#e5ebdf] bg-[#fafbf8] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#899481]">
                       Requests processed
                     </p>
-
-                    <p className="text-xl font-semibold text-value mt-2">
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-[#243328]">
                       {stats.total_requests.toLocaleString()}
                     </p>
-
-                    <div className="mt-4 h-1.5 rounded-full bg-border overflow-hidden">
-                      <div className="h-full w-full bg-accent rounded-full" />
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e8ede3]">
+                      <div className="h-full w-full rounded-full bg-[#7ca76e]" />
                     </div>
                   </div>
 
                   {/* Errors */}
-
-                  <div className="rounded-md border border-border bg-surface p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-muted">
+                  <div className="rounded-xl border border-[#e5ebdf] bg-[#fafbf8] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#899481]">
                       Errors
                     </p>
-
-                    <p className="text-xl font-semibold text-value mt-2">
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-[#243328]">
                       {stats.error_count.toLocaleString()}
                     </p>
-
-                    <div className="mt-4 h-1.5 rounded-full bg-border overflow-hidden">
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e8ede3]">
                       <div
-                        className="h-full bg-red-400 rounded-full"
+                        className="h-full rounded-full bg-[#dc8580]"
                         style={{
-                          width: `${Math.min(
-                            stats.error_rate * 100,
-                            100
-                          )}%`,
+                          width: `${Math.min(stats.error_rate * 100, 100)}%`,
                         }}
                       />
                     </div>
-
-                    <p className="text-[11px] text-muted mt-2">
+                    <p className="mt-2 text-[11px] text-[#899481]">
                       {(stats.error_rate * 100).toFixed(1)}% of requests
                     </p>
                   </div>
 
                   {/* Cost */}
-
-                  <div className="rounded-md border border-border bg-surface p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-muted">
+                  <div className="rounded-xl border border-[#e5ebdf] bg-[#fafbf8] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#899481]">
                       Estimated spend
                     </p>
-
-                    <p className="text-xl font-semibold text-value mt-2">
+                    <p className="mt-2 text-2xl font-semibold tracking-tight text-[#243328]">
                       ${stats.estimated_cost.toFixed(4)}
                     </p>
-
-                    <p className="text-[11px] text-muted mt-4">
+                    <p className="mt-4 text-[11px] text-[#899481]">
                       Based on current usage
                     </p>
                   </div>
-
                 </div>
               </div>
             </section>
 
-            {/* ================================================= */}
             {/* Information */}
-            {/* ================================================= */}
-
-            <section className="mt-6 rounded-lg border border-border bg-card">
-
-              <div className="p-5 flex items-start gap-3">
-
-                <div className="h-8 w-8 shrink-0 rounded-md bg-accent/10 border border-accent/10 flex items-center justify-center text-accent text-sm">
+            <section className="mt-6 rounded-2xl border border-[#e5ebdf] bg-white shadow-sm">
+              <div className="flex items-start gap-3 p-5 sm:p-6">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e1ebda] bg-[#edf5e8] text-sm font-semibold text-[#356344]">
                   i
                 </div>
-
                 <div>
-                  <p className="text-sm font-medium text-value">
+                  <p className="text-sm font-semibold text-[#2d3b30]">
                     About usage metrics
                   </p>
-
-                  <p className="text-xs text-label mt-1 leading-5">
-                    Request counts, error rates, latency, and estimated
-                    costs are calculated from activity recorded by the
-                    platform.
+                  <p className="mt-1 text-xs leading-5 text-[#778174]">
+                    Request counts, error rates, latency, and estimated costs
+                    are calculated from activity recorded by the platform.
                   </p>
                 </div>
-
               </div>
-
             </section>
           </>
         )}
-
       </div>
     </ProtectedRoute>
   );

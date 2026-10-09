@@ -2,489 +2,393 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
-import {
-  UsageStats,
-  RequestLogsResponse,
-  RequestLogEntry,
-} from "@/lib/types";
+import type { UsageStats, RequestLogsResponse, RequestLogEntry } from "@/lib/types";
+
+type MetricTone = "green" | "blue" | "violet" | "amber";
+
+function Brand() {
+  return (
+    <Link
+      href="/"
+      aria-label="Mindora home"
+      className="sd-brand inline-flex items-center gap-2.5 no-underline"
+    >
+      <span className="sd-brand-mark" aria-hidden="true">
+        <i />
+        <i />
+        <b />
+      </span>
+
+      <span className="text-[25px] font-bold tracking-[-1.2px] text-[#20202E]">
+        mindora<span className="text-[#92929F]">.ai</span>
+      </span>
+    </Link>
+  );
+}
 
 export default function DashboardPage() {
   const { user, token } = useAuth();
-
   const [stats, setStats] = useState<UsageStats | null>(null);
   const [logs, setLogs] = useState<RequestLogsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
 
+    let active = true;
+    setIsLoading(true);
     Promise.all([
       api.get<UsageStats>("/usage", token),
       api.get<RequestLogsResponse>("/logs?page=1&page_size=8", token),
     ])
       .then(([usageData, logsData]) => {
+        if (!active) return;
         setStats(usageData);
         setLogs(logsData);
+        setError(null);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
+        if (!active) return;
         setError(
           err instanceof ApiError
             ? err.message
-            : "Failed to load dashboard data"
+            : "Failed to load dashboard data. Please try again."
         );
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
       });
+
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   const successRate = stats
-    ? ((1 - stats.error_rate) * 100).toFixed(1)
+    ? Math.max(0, Math.min(100, (1 - stats.error_rate) * 100)).toFixed(1)
     : "—";
+  const firstName = getFirstName(user?.email);
 
   return (
     <ProtectedRoute>
-      <div className="max-w-[1400px] mx-auto space-y-6">
-
-        {/* ================================================== */}
-        {/* Header */}
-        {/* ================================================== */}
-
-        <section className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+      <div className="mx-auto w-full max-w-[1480px] space-y-6 text-[#20251f]">
+        {/* Page heading */}
+        <section className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-accent font-medium mb-3">
-              AIaaS / Overview
+            <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#63815b]">
+              <span className="h-2 w-2 rounded-full bg-[#9be564]" />
+              Mindora workspace <span className="text-[#a2aaa0]">/</span> Overview
+            </div>
+            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#20251f] sm:text-4xl">
+              Welcome back, {firstName}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#788075]">
+              Here&apos;s what&apos;s happening across your AI infrastructure.
             </p>
-
-            <p className="mt-2 text-sm text-label">
-  Here's what's happening across your AI infrastructure.
-</p>
           </div>
+          
+<div className="flex flex-wrap items-center gap-3">
+  <span className="inline-flex items-center gap-2 rounded-full border border-[#e2e9de] bg-white px-3.5 py-2 text-xs font-medium text-[#566451] shadow-sm">
+    <span className="relative flex h-2 w-2">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8acb5b] opacity-40" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#78b94c]" />
+    </span>
+    Workspace overview
+  </span>
 
-          <Link
-            href="/services"
-            className="
-              inline-flex items-center justify-center
-              rounded-md
-              border border-border
-              bg-card
-              px-4 py-2.5
-              text-sm text-value
-              hover:bg-card-hover
-              transition-colors
-            "
-          >
-            Explore services
-            <span className="ml-2 text-muted">↗</span>
-          </Link>
+  
+<Link
+  href="/services"
+  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e2e9de] bg-white px-4 py-2.5 text-xs font-medium text-[#566451] shadow-sm transition hover:bg-[#f9fbf7] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#9be564]/20"
+>
+  Explore services
+  <span className="text-[#78b94c]">↗</span>
+</Link>
+
+</div>
+
         </section>
 
-        {/* ================================================== */}
-        {/* Error */}
-        {/* ================================================== */}
-
         {error && (
-          <div className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-3">
-            <p className="text-sm text-red-400">{error}</p>
+          <div role="alert" className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-red-800">We couldn&apos;t refresh your dashboard</p>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="self-start rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-800 hover:bg-red-100 sm:self-auto"
+            >
+              Try again
+            </button>
           </div>
         )}
 
-        {/* ================================================== */}
-        {/* Metrics */}
-        {/* ================================================== */}
-
-        <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* KPI cards */}
+        <section aria-label="Usage metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4">
           <MetricCard
-            label="API Requests"
-            value={
-              stats
-                ? stats.total_requests.toLocaleString()
-                : "—"
-            }
-            description="Total requests"
-            icon="⌁"
-            accent="cyan"
+            label="API requests"
+            value={stats ? stats.total_requests.toLocaleString() : "—"}
+            description="Total requests recorded"
+            icon="↗"
+            tone="green"
+            loading={isLoading && !stats}
           />
-
           <MetricCard
-            label="Success Rate"
+            label="Success rate"
             value={stats ? `${successRate}%` : "—"}
-            description={
-              stats
-                ? `${stats.error_count.toLocaleString()} errors`
-                : "Request health"
-            }
+            description={stats ? `${stats.error_count.toLocaleString()} failed requests` : "Successful responses"}
             icon="✓"
-            accent="green"
+            tone="blue"
+            loading={isLoading && !stats}
           />
-
           <MetricCard
-            label="Avg. Latency"
-            value={
-              stats
-                ? `${stats.avg_latency_ms.toFixed(0)} ms`
-                : "—"
-            }
+            label="Average latency"
+            value={stats ? `${stats.avg_latency_ms.toFixed(0)} ms` : "—"}
             description="Average response time"
-            icon="◈"
-            accent="purple"
+            icon="◷"
+            tone="violet"
+            loading={isLoading && !stats}
           />
-
           <MetricCard
-            label="Estimated Cost"
-            value={
-              stats
-                ? `$${stats.estimated_cost.toFixed(4)}`
-                : "—"
-            }
+            label="Estimated cost"
+            value={stats ? `$${stats.estimated_cost.toFixed(4)}` : "—"}
             description="Current usage estimate"
             icon="$"
-            accent="amber"
+            tone="amber"
+            loading={isLoading && !stats}
           />
         </section>
 
-        {/* ================================================== */}
-        {/* Main dashboard */}
-        {/* ================================================== */}
-
-        <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)] gap-4">
-
-          {/* Recent activity */}
-          <RecentActivity logs={logs} />
-
-          {/* Quick actions */}
-          <QuickActions />
-
+        {/* Main content grid */}
+        <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-[minmax(0,1.65fr)_minmax(310px,0.8fr)]">
+          <RecentActivity logs={logs} isLoading={isLoading} />
+          <div className="space-y-5">
+            <QuickActions />
+            <SystemStatus />
+          </div>
         </section>
 
-        {/* ================================================== */}
-        {/* System status */}
-        {/* ================================================== */}
-
-        <section className="rounded-lg border border-border bg-card p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
+        {/* Workspace footer strip */}
+        <section className="flex flex-col gap-3 rounded-2xl border border-[#e3e9df] bg-white px-5 py-4 shadow-[0_8px_28px_rgba(34,55,31,0.035)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f7eb] text-lg text-[#507d3f]">✳</span>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-success" />
-
-                <h2 className="text-sm font-medium text-value">
-                  All systems operational
-                </h2>
-              </div>
-
-              <p className="text-xs text-muted mt-2">
-                Your AIaaS platform services are available.
-              </p>
+              <p className="text-sm font-semibold text-[#273126]">Your AI control plane</p>
+              <p className="mt-0.5 text-xs text-[#858e80]">Manage services, requests and access from one workspace.</p>
             </div>
-
-            <div className="text-xs text-muted">
-              Environment
-              <span className="ml-2 text-value font-medium">
-                Development
-              </span>
-            </div>
-
           </div>
+          <Link href="/settings" className="inline-flex items-center gap-2 text-sm font-semibold text-[#416d35] transition hover:text-[#254c1d]">
+            Workspace settings <span aria-hidden="true">→</span>
+          </Link>
         </section>
       </div>
     </ProtectedRoute>
   );
 }
 
-/* ========================================================== */
-/* Metric Card */
-/* ========================================================== */
-
 function MetricCard({
   label,
   value,
   description,
   icon,
-  accent,
+  tone,
+  loading,
 }: {
   label: string;
   value: string;
   description: string;
   icon: string;
-  accent: "cyan" | "green" | "purple" | "amber";
+  tone: MetricTone;
+  loading: boolean;
 }) {
-  const accentClasses = {
-    cyan: "bg-cyan-500/10 text-cyan-400",
-    green: "bg-emerald-500/10 text-emerald-400",
-    purple: "bg-violet-500/10 text-violet-400",
-    amber: "bg-amber-500/10 text-amber-400",
+  const tones: Record<MetricTone, { icon: string; dot: string }> = {
+    green: { icon: "bg-[#edf7e7] text-[#527f40]", dot: "bg-[#8dc96b]" },
+    blue: { icon: "bg-[#eaf3f7] text-[#47758a]", dot: "bg-[#79b5ca]" },
+    violet: { icon: "bg-[#f0edfa] text-[#7764a7]", dot: "bg-[#a293d6]" },
+    amber: { icon: "bg-[#fbf2df] text-[#9b7737]", dot: "bg-[#d9b45f]" },
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 hover:bg-card-hover transition-colors">
-
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-xs text-label">
-          {label}
-        </p>
-
-        <div
-          className={`h-9 w-9 rounded-md flex items-center justify-center text-sm ${accentClasses[accent]}`}
-        >
-          {icon}
+    <article className="group rounded-2xl border border-[#e3e9df] bg-white p-5 shadow-[0_8px_28px_rgba(34,55,31,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#d2dfca] hover:shadow-[0_14px_34px_rgba(34,55,31,0.07)] sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className={`h-2 w-2 rounded-full ${tones[tone].dot}`} />
+          <p className="text-xs font-medium text-[#778174]">{label}</p>
         </div>
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl text-base font-semibold ${tones[tone].icon}`} aria-hidden="true">
+          {icon}
+        </span>
       </div>
-
       <div className="mt-6">
-        <p className="text-3xl font-semibold tracking-tight text-value">
-          {value}
-        </p>
-
-        <p className="text-xs text-muted mt-2">
-          {description}
-        </p>
+        {loading ? (
+          <div className="h-9 w-28 animate-pulse rounded-lg bg-[#f0f3ed]" />
+        ) : (
+          <p className="text-[clamp(1.65rem,2.2vw,2.1rem)] font-semibold tracking-[-0.05em] text-[#222920]">{value}</p>
+        )}
+        <p className="mt-2 text-xs text-[#899184]">{description}</p>
       </div>
-
-    </div>
+      <div className="mt-5 h-px bg-[#f0f2ed]" />
+      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#9aa294]">Workspace metric</p>
+    </article>
   );
 }
 
-/* ========================================================== */
-/* Recent Activity */
-/* ========================================================== */
-
 function RecentActivity({
   logs,
+  isLoading,
 }: {
   logs: RequestLogsResponse | null;
+  isLoading: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-
-      <div className="flex items-start justify-between px-5 py-5 border-b border-border">
+    <section className="overflow-hidden rounded-2xl border border-[#e3e9df] bg-white shadow-[0_8px_28px_rgba(34,55,31,0.035)]">
+      <div className="flex items-start justify-between gap-4 border-b border-[#edf0e9] px-5 py-5 sm:px-6">
         <div>
-          <h2 className="text-sm font-medium text-value">
-            Recent request activity
-          </h2>
-
-          <p className="text-xs text-muted mt-1">
-            Latest requests across your AI services
-          </p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#78916c]">Activity</p>
+          <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-[#273126]">Recent request activity</h2>
+          <p className="mt-1 text-xs leading-5 text-[#858e80]">Latest requests across your AI services.</p>
         </div>
-
-        <Link
-          href="/logs"
-          className="text-xs text-label hover:text-accent transition-colors"
-        >
-          View all →
+        <Link href="/logs" className="shrink-0 rounded-lg border border-[#e4e9df] px-3 py-2 text-xs font-semibold text-[#4b6842] transition hover:bg-[#f5f8f1]">
+          View all <span aria-hidden="true">↗</span>
         </Link>
       </div>
 
-      {!logs && (
-        <div className="h-64 flex items-center justify-center">
-          <p className="text-sm text-muted">
-            Loading activity...
-          </p>
+      {isLoading && !logs && (
+        <div className="space-y-4 p-6">
+          {[0, 1, 2, 3].map((item) => <div key={item} className="h-[58px] animate-pulse rounded-xl bg-[#f5f7f2]" />)}
         </div>
       )}
 
-      {logs && logs.items.length === 0 && (
-        <div className="h-64 flex items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-10 w-10 rounded-full border border-border bg-surface flex items-center justify-center">
-              <span className="text-accent">⌁</span>
-            </div>
-
-            <p className="text-sm text-value">
-              No requests yet
-            </p>
-
-            <p className="text-xs text-muted mt-1">
-              Your request activity will appear here.
-            </p>
-          </div>
+      {!isLoading && logs && logs.items.length === 0 && (
+        <div className="flex min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f0f7eb] text-xl text-[#5f874e]">⌁</span>
+          <h3 className="mt-4 text-sm font-semibold text-[#30392d]">No requests yet</h3>
+          <p className="mt-1 max-w-xs text-xs leading-5 text-[#858e80]">When your applications start calling Mindora services, recent activity will appear here.</p>
+          <Link href="/api-keys" className="mt-4 text-xs font-semibold text-[#4c783d] hover:underline">Set up an API key →</Link>
         </div>
       )}
 
       {logs && logs.items.length > 0 && (
-        <div className="divide-y divide-border">
-          {logs.items.slice(0, 6).map((log) => (
-            <RequestRow
-              key={log.id}
-              log={log}
-            />
-          ))}
-        </div>
+        <>
+          <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(100px,0.8fr)_90px] gap-4 bg-[#fafbf8] px-6 py-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#9aa294] sm:grid">
+            <span>Service / model</span><span>Status</span><span className="text-right">Latency</span>
+          </div>
+          <div className="divide-y divide-[#f0f2ed]">
+            {logs.items.slice(0, 6).map((log) => <RequestRow key={log.id} log={log} />)}
+          </div>
+          <div className="border-t border-[#edf0e9] bg-[#fcfdfb] px-6 py-3">
+            <Link href="/logs" className="text-xs font-semibold text-[#527844] hover:underline">Open request log explorer →</Link>
+          </div>
+        </>
       )}
 
-    </div>
+      {!isLoading && !logs && (
+        <div className="px-6 py-10 text-center text-sm text-[#858e80]">Activity is currently unavailable.</div>
+      )}
+    </section>
   );
 }
 
-/* ========================================================== */
-/* Request Row */
-/* ========================================================== */
-
-function RequestRow({
-  log,
-}: {
-  log: RequestLogEntry;
-}) {
+function RequestRow({ log }: { log: RequestLogEntry }) {
   const success = log.status_code >= 200 && log.status_code < 300;
-
   return (
-    <div className="flex items-center gap-4 px-5 py-3.5 hover:bg-card-hover transition-colors">
-
-      <div
-        className={`h-8 w-8 shrink-0 rounded-md flex items-center justify-center ${
-          success
-            ? "bg-emerald-500/10 text-emerald-400"
-            : "bg-red-500/10 text-red-400"
-        }`}
-      >
-        {success ? "✓" : "!"}
+    <div className="grid grid-cols-1 gap-3 px-5 py-4 transition hover:bg-[#fcfdfb] sm:grid-cols-[minmax(0,1.4fr)_minmax(100px,0.8fr)_90px] sm:items-center sm:gap-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${success ? "bg-[#edf7e7] text-[#4e7d3e]" : "bg-[#fff0ed] text-[#b55c4e]"}`} aria-hidden="true">
+          {success ? "✓" : "!"}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-[#30392d]">{log.service}</p>
+          <p className="mt-1 truncate text-xs text-[#90988b]">{log.model_version ?? "Unknown model"}</p>
+        </div>
       </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-value truncate">
-          {log.service}
-        </p>
-
-        <p className="text-xs text-muted mt-0.5">
-          {log.model_version ?? "Unknown model"}
-        </p>
+      <div className="flex items-center justify-between sm:block">
+        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#a0a799] sm:hidden">Response status</span>
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${success ? "bg-[#edf7e7] text-[#4e7d3e]" : "bg-[#fff0ed] text-[#b55c4e]"}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${success ? "bg-[#78b957]" : "bg-[#d77a6b]"}`} />
+          {log.status_code} {success ? "Success" : "Error"}
+        </span>
       </div>
-
-      <div className="text-right">
-        <p className="text-sm text-value">
-          {log.latency_ms.toFixed(1)} ms
-        </p>
-
-        <p
-          className={`text-xs mt-0.5 ${
-            success
-              ? "text-emerald-400"
-              : "text-red-400"
-          }`}
-        >
-          {log.status_code}
-        </p>
+      <div className="flex items-center justify-between sm:block sm:text-right">
+        <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#a0a799] sm:hidden">Latency</span>
+        <p className="text-sm font-medium tabular-nums text-[#394235]">{log.latency_ms.toFixed(1)} <span className="text-xs font-normal text-[#929a8d]">ms</span></p>
       </div>
-
     </div>
   );
 }
-
-/* ========================================================== */
-/* Quick Actions */
-/* ========================================================== */
 
 function QuickActions() {
+  const actions = [
+    { href: "/api-keys", icon: "⌁", title: "Create API key", description: "Connect an application", tone: "green" },
+    { href: "/services/fraud", icon: "✳", title: "Run fraud detection", description: "Test an AI service", tone: "violet" },
+    { href: "/usage", icon: "▥", title: "View usage", description: "Review consumption", tone: "blue" },
+    { href: "/logs", icon: "≡", title: "Inspect request logs", description: "Review API activity", tone: "amber" },
+  ];
+
+  const iconTones: Record<string, string> = {
+    green: "bg-[#edf7e7] text-[#527f40]",
+    violet: "bg-[#f0edfa] text-[#7764a7]",
+    blue: "bg-[#eaf3f7] text-[#47758a]",
+    amber: "bg-[#fbf2df] text-[#9b7737]",
+  };
+
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
-
-      <div className="px-5 py-5 border-b border-border">
-        <h2 className="text-sm font-medium text-value">
-          Quick actions
-        </h2>
-
-        <p className="text-xs text-muted mt-1">
-          Jump into your workflow
-        </p>
+    <section className="overflow-hidden rounded-2xl border border-[#e3e9df] bg-white shadow-[0_8px_28px_rgba(34,55,31,0.035)]">
+      <div className="border-b border-[#edf0e9] px-5 py-5 sm:px-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#78916c]">Shortcuts</p>
+        <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-[#273126]">Quick actions</h2>
+        <p className="mt-1 text-xs text-[#858e80]">Jump straight into your workflow.</p>
       </div>
-
-      <div className="p-3">
-
-        <QuickAction
-          href="/api-keys"
-          icon="⌁"
-          title="Create API key"
-          description="Authenticate your application"
-        />
-
-        <QuickAction
-          href="/services/fraud"
-          icon="✦"
-          title="Run fraud detection"
-          description="Test the fraud detection service"
-        />
-
-        <QuickAction
-          href="/usage"
-          icon="▥"
-          title="View usage"
-          description="Inspect API consumption"
-        />
-
-        <QuickAction
-          href="/logs"
-          icon="≡"
-          title="Inspect request logs"
-          description="Review recent API activity"
-        />
-
+      <div className="p-2.5">
+        {actions.map((action) => (
+          <Link key={action.href} href={action.href} className="group flex items-center gap-3 rounded-xl p-3 transition hover:bg-[#f7f9f4]">
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base ${iconTones[action.tone]}`} aria-hidden="true">{action.icon}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-[#354031] transition group-hover:text-[#4d793c]">{action.title}</span>
+              <span className="mt-0.5 block text-xs text-[#8a9285]">{action.description}</span>
+            </span>
+            <span className="text-sm text-[#a2aa9b] transition group-hover:translate-x-0.5 group-hover:text-[#527844]" aria-hidden="true">→</span>
+          </Link>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ========================================================== */
-/* Quick Action Item */
-/* ========================================================== */
-
-function QuickAction({
-  href,
-  icon,
-  title,
-  description,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  description: string;
-}) {
+function SystemStatus() {
   return (
-    <Link
-      href={href}
-      className="
-        flex items-center gap-3
-        rounded-md
-        px-3 py-3
-        hover:bg-card-hover
-        transition-colors
-        group
-      "
-    >
-      <div className="h-9 w-9 shrink-0 rounded-md bg-accent/10 text-accent flex items-center justify-center">
-        {icon}
+    <section className="rounded-2xl border border-[#dfe9d8] bg-[#f1f7ec] p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#578646] shadow-sm" aria-hidden="true">✓</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-[#30432b]">Platform status</h2>
+            <span className="rounded-full bg-[#e1f1d7] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#4d7c3b]">Connected</span>
+          </div>
+          <p className="mt-1.5 text-xs leading-5 text-[#72816a]">Your dashboard data is provided by the Mindora API. Individual service availability is managed in Services.</p>
+        </div>
       </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-value group-hover:text-accent transition-colors">
-          {title}
-        </p>
-
-        <p className="text-xs text-muted mt-0.5">
-          {description}
-        </p>
+      <div className="mt-5 flex items-center justify-between border-t border-[#dce7d5] pt-4 text-xs">
+        <span className="text-[#82917a]">Environment</span>
+        <span className="font-semibold text-[#41583a]">Development</span>
       </div>
-
-      <span className="text-muted group-hover:text-value transition-colors">
-        ↗
-      </span>
-    </Link>
+      <Link href="/services" className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#4b773b] hover:underline">View services <span aria-hidden="true">↗</span></Link>
+    </section>
   );
 }
-
-/* ========================================================== */
-/* Helpers */
-/* ========================================================== */
 
 function getFirstName(email?: string | null) {
   if (!email) return "there";
-
   const name = email.split("@")[0];
-
   if (!name) return "there";
-
-  return name
-    .split(/[._-]/)[0]
-    .replace(/^\w/, (char) => char.toUpperCase());
+  return name.split(/[.\_-]/)[0].replace(/^\w/, (char) => char.toUpperCase());
 }

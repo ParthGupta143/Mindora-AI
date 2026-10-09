@@ -1,8 +1,29 @@
 "use client";
+
 import Link from "next/link";
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, ApiError } from "@/lib/auth-context";
+
+function Brand() {
+  return (
+    <Link
+      href="/"
+      aria-label="Mindora home"
+      className="sd-brand inline-flex items-center gap-2.5 no-underline"
+    >
+      <span className="sd-brand-mark" aria-hidden="true">
+        <i />
+        <i />
+        <b />
+      </span>
+
+      <span className="text-[25px] font-bold tracking-[-1.2px] text-[#20202E]">
+        mindora<span className="text-[#92929F]">.ai</span>
+      </span>
+    </Link>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -40,60 +61,44 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#080b0f] text-white flex items-center justify-center px-6">
+    <main className="min-h-screen bg-[#F6F8F4] text-[#20251F] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-md">
-
-        {/* Brand */}
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center">
-  <img
-    src="/mindora-icon.png"
-    alt="Mindora"
-    className="h-12 w-12 object-contain"
-  />
-</div>
-
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Mindora
-          </h1>
-
-          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-            AIaaS Platform
-          </p>
-        </div>
+        {/* Mindora landing page branding */}
+        <header className="mb-8 flex justify-center">
+          <Brand />
+        </header>
 
         {/* Login card */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-slate-800 bg-[#0f141b] shadow-2xl"
+          className="overflow-hidden rounded-2xl border border-[#E3E9DF] bg-white shadow-[0_16px_50px_rgba(28,55,31,0.07)]"
         >
-          {/* Header */}
-          <div className="border-b border-slate-800 px-6 py-5">
-            <h2 className="text-lg font-semibold">
-              Sign in
+          <div className="border-b border-[#E8EDE5] px-6 py-5 sm:px-8">
+            <h2 className="text-xl font-semibold text-[#20251F]">
+              Welcome back
             </h2>
 
-            <p className="mt-1 text-sm text-slate-400">
-              Access your AI infrastructure dashboard.
+            <p className="mt-1 text-sm text-[#778074]">
+              Sign in to your Mindora AI workspace.
             </p>
           </div>
 
-          {/* Form */}
-          <div className="px-6 py-6">
-
+          <div className="px-6 py-7 sm:px-8">
             {error && (
-              <div className="mb-5 rounded-lg border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+              <div
+                role="alert"
+                className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
                 {error}
               </div>
             )}
 
-            {/* Email */}
             <div className="mb-5">
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-sm font-medium text-[#30382F]"
               >
-                Email
+                Email address
               </label>
 
               <input
@@ -104,15 +109,14 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className="w-full rounded-lg border border-[#DDE5D9] bg-[#FCFDFC] px-3.5 py-3 text-sm text-[#20251F] outline-none transition placeholder:text-[#A0A99D] focus:border-[#75BF50] focus:ring-4 focus:ring-[#9BE564]/20"
               />
             </div>
 
-            {/* Password */}
-            <div className="mb-6">
+            <div className="mb-7">
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-300"
+                className="mb-2 block text-sm font-medium text-[#30382F]"
               >
                 Password
               </label>
@@ -125,44 +129,41 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className="w-full rounded-lg border border-[#DDE5D9] bg-[#FCFDFC] px-3.5 py-3 text-sm text-[#20251F] outline-none transition placeholder:text-[#A0A99D] focus:border-[#75BF50] focus:ring-4 focus:ring-[#9BE564]/20"
               />
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-[#9BE564] px-4 py-3 text-sm font-semibold text-[#17351C] transition hover:bg-[#8BD653] focus:outline-none focus:ring-4 focus:ring-[#9BE564]/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
-          
-          <div className="border-t border-slate-800 px-6 py-4 text-center">
-  <p className="text-sm text-slate-500">
-    Don't have an account?{" "}
-    <Link
-      href="/register"
-      className="font-medium text-cyan-400 hover:text-cyan-300"
-    >
-      Sign up
-    </Link>
-  </p>
-</div>
 
-          {/* Footer */}
-          <div className="border-t border-slate-800 px-6 py-4">
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              <span>All systems operational</span>
+          <div className="border-t border-[#E8EDE5] px-6 py-5 text-center sm:px-8">
+            <p className="text-sm text-[#778074]">
+              Don't have an account?{" "}
+              <Link
+                href="/register"
+                className="font-semibold text-[#286A36] hover:text-[#174B28] hover:underline"
+              >
+                Create an account
+              </Link>
+            </p>
+          </div>
+
+          <div className="border-t border-[#E8EDE5] bg-[#FAFCF8] px-6 py-4">
+            <div className="flex items-center justify-center gap-2 text-xs text-[#718071]">
+              <span className="h-2 w-2 rounded-full bg-[#76C84E]" />
+              <span>Secure access to your AI workspace</span>
             </div>
           </div>
         </form>
 
-        {/* Bottom text */}
-        <p className="mt-6 text-center text-xs text-slate-600">
-          AIaaS Platform · Secure Control Plane
+        <p className="mt-6 text-center text-xs text-[#899186]">
+          Mindora AI · Secure Control Plane
         </p>
       </div>
     </main>

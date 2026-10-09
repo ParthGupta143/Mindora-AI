@@ -1,8 +1,30 @@
+
 "use client";
+
 import { api } from "@/lib/api";
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+function Brand() {
+  return (
+    <Link
+      href="/"
+      aria-label="Mindora home"
+      className="sd-brand inline-flex items-center gap-2.5 no-underline"
+    >
+      <span className="sd-brand-mark" aria-hidden="true">
+        <i />
+        <i />
+        <b />
+      </span>
+
+      <span className="text-[25px] font-bold tracking-[-1.2px] text-[#20202E]">
+        mindora<span className="text-[#92929F]">.ai</span>
+      </span>
+    </Link>
+  );
+}
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +36,7 @@ export default function RegisterPage() {
 
   const router = useRouter();
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -24,78 +46,68 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-try {
-  await api.post("/auth/register", {
-    email,
-    password,
-    organization_name: organizationName,
-  });
 
-  router.push("/login");
-} catch (err) {
-  setError(
-    err instanceof Error
-      ? err.message
-      : "Something went wrong. Please try again."
-  );
-} finally {
-  setIsLoading(false);
-}}
+    try {
+      await api.post("/auth/register", {
+        email,
+        password,
+        organization_name: organizationName,
+      });
+
+      router.push("/login");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const inputClass =
+    "w-full rounded-lg border border-[#DDE5D9] bg-[#FCFDFC] px-3.5 py-3 text-sm text-[#20251F] outline-none transition placeholder:text-[#A0A99D] focus:border-[#75BF50] focus:ring-4 focus:ring-[#9BE564]/20";
+
+  const labelClass =
+    "mb-2 block text-sm font-medium text-[#30382F]";
 
   return (
-    <main className="min-h-screen bg-[#080b0f] text-white flex items-center justify-center px-6">
+    <main className="min-h-screen bg-[#F6F8F4] text-[#20251F] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-md">
+        {/* Mindora landing page branding */}
+        <header className="mb-8 flex justify-center">
+          <Brand />
+        </header>
 
-        {/* Brand */}
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center">
-            <img
-              src="/mindora-icon.png"
-              alt="Mindora"
-              className="h-12 w-12 object-contain"
-            />
-          </div>
-
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Mindora
-          </h1>
-
-          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
-            AIaaS Platform
-          </p>
-        </div>
-
-        {/* Register card */}
+        {/* Registration card */}
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-slate-800 bg-[#0f141b] shadow-2xl"
+          className="overflow-hidden rounded-2xl border border-[#E3E9DF] bg-white shadow-[0_16px_50px_rgba(28,55,31,0.07)]"
         >
-          {/* Header */}
-          <div className="border-b border-slate-800 px-6 py-5">
-            <h2 className="text-lg font-semibold">
-              Create account
-            </h2>
+          <div className="border-b border-[#E8EDE5] px-6 py-5 sm:px-8">
+            <h1 className="text-xl font-semibold text-[#20251F]">
+              Create your account
+            </h1>
 
-            <p className="mt-1 text-sm text-slate-400">
-              Create your AI infrastructure account.
+            <p className="mt-1 text-sm text-[#778074]">
+              Get started with your Mindora AI workspace.
             </p>
           </div>
 
-          <div className="px-6 py-6">
-
+          <div className="px-6 py-7 sm:px-8">
             {error && (
-              <div className="mb-5 rounded-lg border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+              <div
+                role="alert"
+                className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
                 {error}
               </div>
             )}
 
-            {/* Email */}
             <div className="mb-5">
-              <label
-                htmlFor="email"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Email
+              <label htmlFor="email" className={labelClass}>
+                Email address
               </label>
 
               <input
@@ -106,16 +118,29 @@ try {
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className={inputClass}
               />
             </div>
 
-            {/* Password */}
             <div className="mb-5">
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
+              <label htmlFor="organizationName" className={labelClass}>
+                Organization name
+              </label>
+
+              <input
+                id="organizationName"
+                type="text"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                required
+                autoComplete="organization"
+                placeholder="Your organization"
+                className={inputClass}
+              />
+            </div>
+
+            <div className="mb-5">
+              <label htmlFor="password" className={labelClass}>
                 Password
               </label>
 
@@ -128,37 +153,17 @@ try {
                 minLength={8}
                 autoComplete="new-password"
                 placeholder="Create a password"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                className={inputClass}
               />
+
+              <p className="mt-2 text-xs text-[#899186]">
+                Use at least 8 characters.
+              </p>
             </div>
 
-            {/*Organization Name */}
-            <div className="mb-5">
-            <label
-                htmlFor="organizationName"
-                className="mb-2 block text-sm font-medium text-slate-300"
-            >
-                Organization Name
-            </label>
-
-            <input
-                id="organizationName"
-                type="text"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                required
-                placeholder="Your organization"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-            />
-            </div>
-
-            {/* Confirm password */}
-            <div className="mb-6">
-              <label
-                htmlFor="confirmPassword"
-                className="mb-2 block text-sm font-medium text-slate-300"
-              >
-                Confirm Password
+            <div className="mb-7">
+              <label htmlFor="confirmPassword" className={labelClass}>
+                Confirm password
               </label>
 
               <input
@@ -168,34 +173,37 @@ try {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 autoComplete="new-password"
-                placeholder="Confirm your password"
-                className="w-full rounded-lg border border-slate-700 bg-[#080b0f] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                placeholder="Enter your password again"
+                className={inputClass}
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-[#9BE564] px-4 py-3 text-sm font-semibold text-[#17351C] transition hover:bg-[#8BD653] focus:outline-none focus:ring-4 focus:ring-[#9BE564]/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? "Creating account..." : "Create account"}
             </button>
           </div>
 
-          {/* Login link */}
-          <div className="border-t border-slate-800 px-6 py-4 text-center">
-            <p className="text-sm text-slate-500">
+          <div className="border-t border-[#E8EDE5] bg-[#FAFCF8] px-6 py-5 text-center sm:px-8">
+            <p className="text-sm text-[#778074]">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-medium text-cyan-400 hover:text-cyan-300"
+                className="font-semibold text-[#286A36] hover:text-[#174B28] hover:underline"
               >
                 Sign in
               </Link>
             </p>
           </div>
         </form>
+
+        <p className="mt-6 text-center text-xs text-[#899186]">
+          Mindora AI · Secure Control Plane
+        </p>
       </div>
     </main>
   );
-  }
+}
