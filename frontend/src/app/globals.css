@@ -1,8 +1,6 @@
-﻿@import "tailwindcss";
+﻿
 
-@import url('https://fonts.googleapis.com/...');
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
-
+@import "tailwindcss";
 :root {
   --ink: #171725;
   --muted: #686878;

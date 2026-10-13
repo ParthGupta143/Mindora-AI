@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
-import { UsageStats } from "@/lib/types";
+import type { UsageStats, RequestLogsResponse, RequestLogEntry } from "@/lib/types";
 
 function StatCard({
   label,
@@ -40,21 +40,176 @@ function StatCard({
   );
 }
 
+function UsageAnalytics({ logs, isLoading }: { logs: RequestLogEntry[]; isLoading: boolean }) {
+  const daily = buildDailyAnalytics(logs);
+  const maxRequests = Math.max(1, ...daily.map((day) => day.requests));
+  const maxLatency = Math.max(1, ...daily.map((day) => day.avgLatency));
+  const services = logs.reduce<Record<string, number>>((acc, log) => {
+    const name = log.service || "Unknown";
+    acc[name] = (acc[name] ?? 0) + 1;
+    return acc;
+  }, {});
+  const serviceEntries = Object.entries(services).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const sampleSize = logs.length;
+
+  return (
+    <section className="mt-6 space-y-4" aria-label="Usage analytics charts">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-[#2d3b30]">Request volume</h2>
+              <p className="mt-1 text-xs text-[#899481]">Requests per day · last 7 days</p>
+            </div>
+            <span className="rounded-lg bg-[#edf5e8] px-2.5 py-1.5 text-xs font-semibold text-[#356344]">{sampleSize} logs</span>
+          </div>
+          {isLoading ? <ChartSkeleton /> : sampleSize === 0 ? <ChartEmpty /> : (
+            <div className="mt-5 flex h-44 items-end gap-2 sm:gap-3">
+              {daily.map((day) => (
+                <div key={day.dateKey} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                  <span className="text-[10px] font-medium tabular-nums text-[#72816a]">{day.requests}</span>
+                  <div className="flex h-[112px] w-full items-end rounded-t-md bg-[#f4f7f1]">
+                    <div className="w-full rounded-t-md bg-[#9be564] transition-all" style={{ height: `${Math.max(day.requests > 0 ? 8 : 2, (day.requests / maxRequests) * 100)}%` }} />
+                  </div>
+                  <span className="text-[10px] text-[#899481]">{day.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm sm:p-6">
+          <div>
+            <h2 className="text-sm font-semibold text-[#2d3b30]">Success vs. errors</h2>
+            <p className="mt-1 text-xs text-[#899481]">Response status from logged requests</p>
+          </div>
+          {isLoading ? <ChartSkeleton /> : sampleSize === 0 ? <ChartEmpty /> : (
+            <div className="mt-6">
+              <div className="flex h-4 overflow-hidden rounded-full bg-[#f4f7f1]">
+                <div className="bg-[#78b957] transition-all" style={{ width: `${(logs.filter((log) => log.status_code >= 200 && log.status_code < 400).length / sampleSize) * 100}%` }} />
+                <div className="bg-[#dc8580] transition-all" style={{ width: `${(logs.filter((log) => log.status_code < 200 || log.status_code >= 400).length / sampleSize) * 100}%` }} />
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-[#f4f8f0] p-4">
+                  <span className="flex items-center gap-2 text-xs text-[#72816a]"><i className="h-2 w-2 rounded-full bg-[#78b957]" />Successful</span>
+                  <p className="mt-2 text-2xl font-semibold text-[#315c2b]">{logs.filter((log) => log.status_code >= 200 && log.status_code < 400).length.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-[#fff5f3] p-4">
+                  <span className="flex items-center gap-2 text-xs text-[#9b716b]"><i className="h-2 w-2 rounded-full bg-[#dc8580]" />Errors</span>
+                  <p className="mt-2 text-2xl font-semibold text-[#a54f48]">{logs.filter((log) => log.status_code < 200 || log.status_code >= 400).length.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm sm:p-6">
+          <div>
+            <h2 className="text-sm font-semibold text-[#2d3b30]">Average latency trend</h2>
+            <p className="mt-1 text-xs text-[#899481]">Mean response time per day</p>
+          </div>
+          {isLoading ? <ChartSkeleton /> : sampleSize === 0 ? <ChartEmpty /> : (
+            <div className="mt-5 h-44">
+              <svg viewBox="0 0 320 130" role="img" aria-label="Average request latency grouped by day" className="h-full w-full">
+                {[18, 48, 78, 108].map((y) => <line key={y} x1="10" y1={y} x2="310" y2={y} stroke="#e8eee3" strokeWidth="1" />)}
+                <polyline points={daily.map((day, index) => `${10 + (index * 300) / 6},${108 - (day.avgLatency / maxLatency) * 86}`).join(" ")} fill="none" stroke="#477a43" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                {daily.map((day, index) => <circle key={day.dateKey} cx={10 + (index * 300) / 6} cy={108 - (day.avgLatency / maxLatency) * 86} r="3" fill="#9be564" stroke="#477a43" strokeWidth="1.5" />)}
+              </svg>
+              <div className="mt-1 grid grid-cols-7 gap-1">{daily.map((day) => <p key={day.dateKey} className="text-center text-[10px] text-[#899481]">{day.label}</p>)}</div>
+            </div>
+          )}
+          {!isLoading && sampleSize > 0 && <p className="mt-3 text-xs text-[#899481]">Overall sample average: {(logs.reduce((sum, log) => sum + log.latency_ms, 0) / sampleSize).toFixed(1)} ms</p>}
+        </div>
+
+        <div className="rounded-2xl border border-[#e5ebdf] bg-white p-5 shadow-sm sm:p-6">
+          <div>
+            <h2 className="text-sm font-semibold text-[#2d3b30]">Usage by service</h2>
+            <p className="mt-1 text-xs text-[#899481]">Share of latest logged requests</p>
+          </div>
+          {isLoading ? <ChartSkeleton /> : serviceEntries.length === 0 ? <ChartEmpty /> : (
+            <div className="mt-5 space-y-4">
+              {serviceEntries.map(([service, count]) => (
+                <div key={service}>
+                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                    <span className="truncate font-medium text-[#43513e]">{service}</span>
+                    <span className="tabular-nums text-[#899481]">{count} · {Math.round((count / sampleSize) * 100)}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[#edf1e9]">
+                    <div className="h-full rounded-full bg-[#9be564]" style={{ width: `${(count / sampleSize) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {sampleSize > 0 && <p className="px-1 text-[10px] leading-4 text-[#9aa294]">Charts are calculated from the latest 100 request logs returned by the API. They are a recent sample, not complete historical totals. The KPI cards above use the backend's aggregate usage endpoint.</p>}
+    </section>
+  );
+}
+
+type DailyAnalyticsPoint = { label: string; dateKey: string; requests: number; errors: number; avgLatency: number };
+function buildDailyAnalytics(logs: RequestLogEntry[]): DailyAnalyticsPoint[] {
+  const now = new Date();
+  const days: DailyAnalyticsPoint[] = [];
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const dateKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    days.push({ label: day.toLocaleDateString(undefined, { weekday: "short" }), dateKey, requests: 0, errors: 0, avgLatency: 0 });
+  }
+  const latencyTotals: Record<string, { total: number; count: number }> = {};
+  for (const log of logs) {
+    const timestamp = (log as RequestLogEntry & { created_at?: string }).created_at;
+    if (!timestamp) continue;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) continue;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const day = days.find((item) => item.dateKey === key);
+    if (!day) continue;
+    day.requests += 1;
+    if (log.status_code < 200 || log.status_code >= 400) day.errors += 1;
+    const latency = latencyTotals[key] ?? { total: 0, count: 0 };
+    latency.total += log.latency_ms;
+    latency.count += 1;
+    latencyTotals[key] = latency;
+  }
+  for (const day of days) {
+    const latency = latencyTotals[day.dateKey];
+    day.avgLatency = latency && latency.count ? latency.total / latency.count : 0;
+  }
+  return days;
+}
+
+function ChartSkeleton() {
+  return <div className="mt-5 h-40 animate-pulse rounded-xl bg-[#f5f7f2]" />;
+}
+function ChartEmpty() {
+  return <div className="mt-5 flex min-h-40 items-center justify-center rounded-xl border border-dashed border-[#dfe8d8] bg-[#fafcf8] px-4 text-center text-xs leading-5 text-[#858e80]">No request logs available yet. Run requests through Mindora to populate these charts.</div>;
+}
+
 export default function UsagePage() {
   const { token } = useAuth();
 
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const [logs, setLogs] = useState<RequestLogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     api
       .get<UsageStats>("/usage", token)
-      .then(setStats)
-      .catch((err) =>
-        setError(
-          err instanceof ApiError ? err.message : "Failed to load usage"
-        )
-      );
+      .then((data) => { if (active) setStats(data); })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof ApiError ? err.message : "Failed to load usage");
+      });
+    api
+      .get<RequestLogsResponse>("/logs?page=1&page_size=100", token)
+      .then((data) => { if (active) setLogs(data.items ?? []); })
+      .catch(() => { if (active) setLogs([]); })
+      .finally(() => { if (active) setLogsLoading(false); });
+    return () => { active = false; };
   }, [token]);
 
   return (
@@ -138,6 +293,9 @@ export default function UsagePage() {
                 icon="$"
               />
             </div>
+
+            {/* Detailed analytics charts derived from actual request logs */}
+            <UsageAnalytics logs={logs} isLoading={logsLoading} />
 
             {/* Usage overview */}
             <section className="mt-6 overflow-hidden rounded-2xl border border-[#e5ebdf] bg-white shadow-sm">

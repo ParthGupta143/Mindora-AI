@@ -7,27 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api, ApiError } from "@/lib/api";
 import type { UsageStats, RequestLogsResponse, RequestLogEntry } from "@/lib/types";
 
-type MetricTone = "green" | "blue" | "violet" | "amber";
-
-function Brand() {
-  return (
-    <Link
-      href="/"
-      aria-label="Mindora home"
-      className="sd-brand inline-flex items-center gap-2.5 no-underline"
-    >
-      <span className="sd-brand-mark" aria-hidden="true">
-        <i />
-        <i />
-        <b />
-      </span>
-
-      <span className="text-[25px] font-bold tracking-[-1.2px] text-[#20202E]">
-        mindora<span className="text-[#92929F]">.ai</span>
-      </span>
-    </Link>
-  );
-}
+type MetricTone = "green" | "blue" | "amber";
 
 export default function DashboardPage() {
   const { user, token } = useAuth();
@@ -46,7 +26,7 @@ export default function DashboardPage() {
     setIsLoading(true);
     Promise.all([
       api.get<UsageStats>("/usage", token),
-      api.get<RequestLogsResponse>("/logs?page=1&page_size=8", token),
+      api.get<RequestLogsResponse>("/logs?page=1&page_size=100", token),
     ])
       .then(([usageData, logsData]) => {
         if (!active) return;
@@ -93,27 +73,21 @@ export default function DashboardPage() {
               Here&apos;s what&apos;s happening across your AI infrastructure.
             </p>
           </div>
-          
-<div className="flex flex-wrap items-center gap-3">
-  <span className="inline-flex items-center gap-2 rounded-full border border-[#e2e9de] bg-white px-3.5 py-2 text-xs font-medium text-[#566451] shadow-sm">
-    <span className="relative flex h-2 w-2">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8acb5b] opacity-40" />
-      <span className="relative inline-flex h-2 w-2 rounded-full bg-[#78b94c]" />
-    </span>
-    Workspace overview
-  </span>
-
-  
-<Link
-  href="/services"
-  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#e2e9de] bg-white px-4 py-2.5 text-xs font-medium text-[#566451] shadow-sm transition hover:bg-[#f9fbf7] hover:shadow-md focus:outline-none focus:ring-4 focus:ring-[#9be564]/20"
->
-  Explore services
-  <span className="text-[#78b94c]">↗</span>
-</Link>
-
-</div>
-
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#e2e9de] bg-white px-3.5 py-2 text-xs font-medium text-[#566451] shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#8acb5b] opacity-40" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#78b94c]" />
+              </span>
+              Workspace overview
+            </span>
+            <Link
+              href="/services"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#20251f] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#354332] focus:outline-none focus:ring-4 focus:ring-[#9be564]/30"
+            >
+              Explore services <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
         </section>
 
         {error && (
@@ -155,7 +129,7 @@ export default function DashboardPage() {
             value={stats ? `${stats.avg_latency_ms.toFixed(0)} ms` : "—"}
             description="Average response time"
             icon="◷"
-            tone="violet"
+            tone="green"
             loading={isLoading && !stats}
           />
           <MetricCard
@@ -167,6 +141,9 @@ export default function DashboardPage() {
             loading={isLoading && !stats}
           />
         </section>
+
+        {/* Compact request trend: calculated from real request-log timestamps */}
+        <RequestTrend logs={logs?.items ?? []} isLoading={isLoading} />
 
         {/* Main content grid */}
         <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-[minmax(0,1.65fr)_minmax(310px,0.8fr)]">
@@ -195,6 +172,82 @@ export default function DashboardPage() {
   );
 }
 
+function RequestTrend({ logs, isLoading }: { logs: RequestLogEntry[]; isLoading: boolean }) {
+  const points = getDailyRequestCounts(logs);
+  const max = Math.max(1, ...points.map((point) => point.count));
+  const coordinates = points.map((point, index) => ({
+    ...point,
+    x: points.length === 1 ? 160 : 12 + (index * 296) / (points.length - 1),
+    y: 88 - (point.count / max) * 68,
+  }));
+  const line = coordinates.map((point) => `${point.x},${point.y}`).join(" ");
+  const totalInSample = points.reduce((sum, point) => sum + point.count, 0);
+
+  return (
+    <section className="rounded-2xl border border-[#e3e9df] bg-white p-5 shadow-[0_8px_28px_rgba(34,55,31,0.035)] sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#78916c]">Analytics</p>
+          <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-[#273126]">API requests over time</h2>
+          <p className="mt-1 text-xs text-[#858e80]">Daily request activity from the latest logged requests.</p>
+        </div>
+        <div className="rounded-xl bg-[#f1f7ec] px-3.5 py-2">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#71836a]">Requests in 7-day sample</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums text-[#315c2b]">{isLoading && logs.length === 0 ? "…" : totalInSample.toLocaleString()}</p>
+        </div>
+      </div>
+      {isLoading && logs.length === 0 ? (
+        <div className="mt-6 h-36 animate-pulse rounded-xl bg-[#f5f7f2]" />
+      ) : logs.length === 0 ? (
+        <div className="mt-5 flex min-h-36 items-center justify-center rounded-xl border border-dashed border-[#dfe8d8] bg-[#fafcf8] px-4 text-center text-sm text-[#858e80]">
+          No request history yet. Run a request through Mindora to start building this chart.
+        </div>
+      ) : (
+        <>
+          <div className="mt-5 h-40 w-full">
+            <svg viewBox="0 0 320 104" role="img" aria-label="API requests grouped by day from the latest logged requests" className="h-full w-full overflow-visible">
+              {[20, 42, 64, 88].map((y) => <line key={y} x1="8" y1={y} x2="312" y2={y} stroke="#e8eee3" strokeWidth="1" />)}
+              <polygon points={`12,96 ${line} 308,96`} fill="#9be564" opacity="0.18" />
+              <polyline points={line} fill="none" stroke="#4d8a3e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {coordinates.map((point) => <circle key={point.label} cx={point.x} cy={point.y} r="3" fill="#4d8a3e" stroke="#fff" strokeWidth="1.5" />)}
+            </svg>
+          </div>
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {points.map((point) => (
+              <div key={point.label} className="text-center">
+                <p className="text-[10px] font-semibold tabular-nums text-[#52634c]">{point.count}</p>
+                <p className="mt-1 text-[10px] text-[#929a8d]">{point.label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-[10px] leading-4 text-[#9aa294]">This chart uses the latest 100 request logs available from the API, so it may not represent every request in the selected period.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
+type DailyRequestPoint = { label: string; dateKey: string; count: number };
+function getDailyRequestCounts(logs: RequestLogEntry[]): DailyRequestPoint[] {
+  const now = new Date();
+  const days: DailyRequestPoint[] = [];
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+    const dateKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    days.push({ label: day.toLocaleDateString(undefined, { weekday: "short" }), dateKey, count: 0 });
+  }
+  for (const log of logs) {
+    const timestamp = (log as RequestLogEntry & { created_at?: string }).created_at;
+    if (!timestamp) continue;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) continue;
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const day = days.find((item) => item.dateKey === key);
+    if (day) day.count += 1;
+  }
+  return days;
+}
+
 function MetricCard({
   label,
   value,
@@ -213,7 +266,6 @@ function MetricCard({
   const tones: Record<MetricTone, { icon: string; dot: string }> = {
     green: { icon: "bg-[#edf7e7] text-[#527f40]", dot: "bg-[#8dc96b]" },
     blue: { icon: "bg-[#eaf3f7] text-[#47758a]", dot: "bg-[#79b5ca]" },
-    violet: { icon: "bg-[#f0edfa] text-[#7764a7]", dot: "bg-[#a293d6]" },
     amber: { icon: "bg-[#fbf2df] text-[#9b7737]", dot: "bg-[#d9b45f]" },
   };
 
@@ -329,14 +381,13 @@ function RequestRow({ log }: { log: RequestLogEntry }) {
 function QuickActions() {
   const actions = [
     { href: "/api-keys", icon: "⌁", title: "Create API key", description: "Connect an application", tone: "green" },
-    { href: "/services/fraud", icon: "✳", title: "Run fraud detection", description: "Test an AI service", tone: "violet" },
+    { href: "/services/fraud", icon: "✳", title: "Run fraud detection", description: "Test an AI service", tone: "green" },
     { href: "/usage", icon: "▥", title: "View usage", description: "Review consumption", tone: "blue" },
     { href: "/logs", icon: "≡", title: "Inspect request logs", description: "Review API activity", tone: "amber" },
   ];
 
   const iconTones: Record<string, string> = {
     green: "bg-[#edf7e7] text-[#527f40]",
-    violet: "bg-[#f0edfa] text-[#7764a7]",
     blue: "bg-[#eaf3f7] text-[#47758a]",
     amber: "bg-[#fbf2df] text-[#9b7737]",
   };
