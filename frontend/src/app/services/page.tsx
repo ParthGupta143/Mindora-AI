@@ -189,7 +189,7 @@ export default function ServicesPage() {
                     </div>
 
                     <span className="inline-flex items-center gap-2 rounded-full border border-[#E2E9DE] bg-white px-3 py-2 text-xs font-medium text-[#566451] transition group-hover:border-[#DCEBD4] group-hover:bg-[#F4F8F0] group-hover:text-[#386C3A]">
-                      {isFraud ? "Open service" : "Available"}
+                      {isFraud ? "Open service" : "Unavailable"}
                       {isFraud && <span aria-hidden="true">↗</span>}
                     </span>
                   </div>
